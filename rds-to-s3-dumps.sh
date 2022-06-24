@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 CODEBUILD="${1}" #true or false
 
@@ -29,10 +29,10 @@ elif [[ "${CODEBUILD}" == "false" ]]; then
   while [[ "$CONFIRMATION_ANSWER" != "YES" ]]; do
       read -r -p "Do you want to restore the db to the latest restorable time? [YES/NO]: " CONFIRMATION_ANSWER
 
-      if [ "$CONFIRMATION_ANSWER" == "YES" ]; then
+      if [[ "$CONFIRMATION_ANSWER" == "YES" ]]; then
           RESTORE_TO_LATEST="true"
           break
-      elif [ "$CONFIRMATION_ANSWER" == "NO" ]; then
+      elif [[ "$CONFIRMATION_ANSWER" == "NO" ]]; then
           RESTORE_TO_LATEST="false"
           read -r -p "Enter the point in time from which to restore (UTC Time Format as in the Restore Window): " POINT_IN_TIME
           break
@@ -56,7 +56,7 @@ DB_SUBNET_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[]
 DB_VPC_SECURITY_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].VpcSecurityGroups[].VpcSecurityGroupId')
 DB_PARAMETER_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].DBParameterGroups[].DBParameterGroupName')
 
-if [ "$RESTORE_TO_LATEST" == "true" ]; then
+if [[ "$RESTORE_TO_LATEST" == "true" ]]; then
   echo "Using latest restorable time to restore database"
   DB_CREATION_COMMAND=$(aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier "${RDS_INSTANCE}" \
     --target-db-instance-identifier "restored-${RDS_INSTANCE}" \
@@ -65,7 +65,7 @@ if [ "$RESTORE_TO_LATEST" == "true" ]; then
     --db-parameter-group-name "${DB_PARAMETER_GROUP}" --no-deletion-protection)
   echo "${DB_CREATION_COMMAND}" 
 
-elif [ "$RESTORE_TO_LATEST" == "false" ]; then
+elif [[ "$RESTORE_TO_LATEST" == "false" ]]; then
   
   echo "Using point in time ${POINT_IN_TIME} to restore database"
   DB_CREATION_COMMAND=$(aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier "${RDS_INSTANCE}" \
