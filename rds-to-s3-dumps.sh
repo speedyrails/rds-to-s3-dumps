@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 CODEBUILD="${1}" #true or false
 
