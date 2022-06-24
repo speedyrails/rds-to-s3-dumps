@@ -6,18 +6,18 @@ RDS_INSTANCE="${2}"
 
 echo "Running backup script for RDS instance ${RDS_INSTANCE} using CodeBuild ${CODEBUILD}"
 
-RESTORE_TIME=$(aws rds describe-db-instance-automated-backups --db-instance-identifier ${RDS_INSTANCE} | jq --raw-output '.DBInstanceAutomatedBackups[].RestoreWindow')
+RESTORE_TIME=$(aws rds describe-db-instance-automated-backups --db-instance-identifier "${RDS_INSTANCE}" | jq --raw-output '.DBInstanceAutomatedBackups[].RestoreWindow')
 echo "The following is the restore window that can be used:"
 echo "RestoreWindow:${RESTORE_TIME}"
 
 
 if [[ "${CODEBUILD}" == "true" ]]; then
 
-    RESTORE_TO_LATEST=${3}
+    RESTORE_TO_LATEST="${3}"
     echo "Restore latest backup: ${RESTORE_TO_LATEST}"
 
     if [[ "${RESTORE_TO_LATEST}" == "false" ]]; then
-      POINT_IN_TIME=${4}
+      POINT_IN_TIME="${4}"
       echo "Point in time to recover: ${POINT_IN_TIME}"
     fi
 
@@ -49,40 +49,40 @@ fi
 
 
 ### Start restore action
-RDS_INSTANCE_DETAILS=$(aws rds describe-db-instances --db-instance-identifier ${RDS_INSTANCE})
-DB_INSTANCE_CLASS=$(echo $RDS_INSTANCE_DETAILS | jq --raw-output '.DBInstances[].DBInstanceClass')
-DB_AVAILABILITY_ZONE=$(echo $RDS_INSTANCE_DETAILS | jq --raw-output '.DBInstances[].AvailabilityZone')
-DB_SUBNET_GROUP=$(echo $RDS_INSTANCE_DETAILS | jq --raw-output '.DBInstances[].DBSubnetGroup.DBSubnetGroupName')
-DB_VPC_SECURITY_GROUP=$(echo $RDS_INSTANCE_DETAILS | jq --raw-output '.DBInstances[].VpcSecurityGroups[].VpcSecurityGroupId')
-DB_PARAMETER_GROUP=$(echo $RDS_INSTANCE_DETAILS | jq --raw-output '.DBInstances[].DBParameterGroups[].DBParameterGroupName')
+RDS_INSTANCE_DETAILS=$(aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE}")
+DB_INSTANCE_CLASS=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].DBInstanceClass')
+DB_AVAILABILITY_ZONE=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].AvailabilityZone')
+DB_SUBNET_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].DBSubnetGroup.DBSubnetGroupName')
+DB_VPC_SECURITY_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].VpcSecurityGroups[].VpcSecurityGroupId')
+DB_PARAMETER_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].DBParameterGroups[].DBParameterGroupName')
 
 if [ "$RESTORE_TO_LATEST" == "true" ]; then
   echo "Using latest restorable time to restore database"
-  DB_CREATION_COMMAND=$(aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier ${RDS_INSTANCE} \
-    --target-db-instance-identifier restored-${RDS_INSTANCE} \
-    --use-latest-restorable-time  --db-instance-class ${DB_INSTANCE_CLASS} --availability-zone ${DB_AVAILABILITY_ZONE} --db-subnet-group-name ${DB_SUBNET_GROUP} \
-    --no-multi-az --no-publicly-accessible --no-auto-minor-version-upgrade --vpc-security-group-ids ${DB_VPC_SECURITY_GROUP} \
-    --db-parameter-group-name ${DB_PARAMETER_GROUP} --no-deletion-protection)
+  DB_CREATION_COMMAND=$(aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier "${RDS_INSTANCE}" \
+    --target-db-instance-identifier "restored-${RDS_INSTANCE}" \
+    --use-latest-restorable-time  --db-instance-class "${DB_INSTANCE_CLASS}" --availability-zone "${DB_AVAILABILITY_ZONE}" --db-subnet-group-name "${DB_SUBNET_GROUP}" \
+    --no-multi-az --no-publicly-accessible --no-auto-minor-version-upgrade --vpc-security-group-ids "${DB_VPC_SECURITY_GROUP}" \
+    --db-parameter-group-name "${DB_PARAMETER_GROUP}" --no-deletion-protection)
   echo "${DB_CREATION_COMMAND}" 
 
 elif [ "$RESTORE_TO_LATEST" == "false" ]; then
   
   echo "Using point in time ${POINT_IN_TIME} to restore database"
-  DB_CREATION_COMMAND=$(aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier ${RDS_INSTANCE} \
-    --target-db-instance-identifier restored-${RDS_INSTANCE} \
-    --restore-time ${POINT_IN_TIME}  --db-instance-class ${DB_INSTANCE_CLASS} --availability-zone ${DB_AVAILABILITY_ZONE} --db-subnet-group-name ${DB_SUBNET_GROUP} \
+  DB_CREATION_COMMAND=$(aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier "${RDS_INSTANCE}" \
+    --target-db-instance-identifier "restored-${RDS_INSTANCE}" \
+    --restore-time "${POINT_IN_TIME}"  --db-instance-class "${DB_INSTANCE_CLASS}" --availability-zone "${DB_AVAILABILITY_ZONE}" --db-subnet-group-name "${DB_SUBNET_GROUP}" \
     --no-multi-az --no-publicly-accessible --no-auto-minor-version-upgrade --vpc-security-group-ids ${DB_VPC_SECURITY_GROUP} \
-    --db-parameter-group-name ${DB_PARAMETER_GROUP} --no-deletion-protection)
+    --db-parameter-group-name "${DB_PARAMETER_GROUP}" --no-deletion-protection)
 else
   echo "ERROR: Invalid value for variable RESTORE_TO_LATEST. Value: ${RESTORE_TO_LATEST}"
   exit 1
 fi
 
-DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier restored-${RDS_INSTANCE} | jq --raw-output '.DBInstances[].DBInstanceStatus')
+DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier "restored-${RDS_INSTANCE}" | jq --raw-output '.DBInstances[].DBInstanceStatus')
 while [[ "${DB_STATUS}" != "available"  ]]; do
   echo "Restored DB Status: ${DB_STATUS}. Waiting for db creation..."
   sleep 10
-  DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier restored-${RDS_INSTANCE} | jq --raw-output '.DBInstances[].DBInstanceStatus')
+  DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier "restored-${RDS_INSTANCE}" | jq --raw-output '.DBInstances[].DBInstanceStatus')
   if [[ "${DB_STATUS}" == "deleting" ]]; then
     echo "Something happened and DB is being deleted."
     exit 1
