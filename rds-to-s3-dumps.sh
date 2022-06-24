@@ -4,9 +4,9 @@
 # Usage: getdump.sh <codebuild(true/false)> <rds-instance-id> <restore-to-latest(true/false)> <point-in-time-to-recover(UTC time format)>
 ##########################################################################
 
-CODEBUILD="$1" #true or false
+CODEBUILD="${1}" #true or false
 
-RDS_INSTANCE="$2"
+RDS_INSTANCE="${2}"
 
 echo -e "Running backup script for RDS instance ${RDS_INSTANCE} using CodeBuild ${CODEBUILD}"
 
