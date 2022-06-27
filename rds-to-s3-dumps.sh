@@ -161,6 +161,7 @@ echo "[client]" >> .my.cnf
 echo password="${6}" >> .my.cnf
 echo host="$DB_HOST" >> .my.cnf
 echo user="$DB_MASTER_USERNAME" >> .my.cnf
+cat .my.cnf
 
 # PagerDuty parameters
 PG_CREATE_EVENT_URL="https://events.pagerduty.com/generic/2010-04-15/create_event.json"
@@ -222,79 +223,79 @@ check_requirements() {
     fi
 }
 
-backup_users_grants() {
+# backup_users_grants() {
 
-    # Get MySQL version in MAJOR.MINOR format
-    MYSQL_VERSION=`mysql -e "SHOW VARIABLES LIKE 'version';" | grep version | awk '{print $2}' | awk -F. '{print $1 "." $2}'`
+#     # Get MySQL version in MAJOR.MINOR format
+#     MYSQL_VERSION=`mysql -e "SHOW VARIABLES LIKE 'version';" | grep version | awk '{print $2}' | awk -F. '{print $1 "." $2}'`
 
-    # Variable for control errors
-    ERROR_TASK="0"
+#     # Variable for control errors
+#     ERROR_TASK="0"
 
-    if [ "$MYSQL_VERSION" == "5.5" ] || [ "$MYSQL_VERSION" == "5.6" ]; then
-        # Export users and their grants
-        mysql -B -N -e "SELECT DISTINCT CONCAT('SHOW GRANTS FOR \'', user, '\'@\'', host, '\';') AS query FROM mysql.user WHERE user != 'debian-sys-maint' AND user != 'root' AND user != 'phpmyadmin' AND user != 'mysql.sys' AND user != 'mysql.session' AND user != 'mysql.infoschema'" \
-        | mysql | sed 's/\(GRANT .*\)/\1;/;s/^\(Grants for .*\)/## \1 ##/;/##/{x;p;x;}'\
-        > $BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql
+#     if [ "$MYSQL_VERSION" == "5.5" ] || [ "$MYSQL_VERSION" == "5.6" ]; then
+#         # Export users and their grants
+#         mysql -B -N -e "SELECT DISTINCT CONCAT('SHOW GRANTS FOR \'', user, '\'@\'', host, '\';') AS query FROM mysql.user WHERE user != 'debian-sys-maint' AND user != 'root' AND user != 'phpmyadmin' AND user != 'mysql.sys' AND user != 'mysql.session' AND user != 'mysql.infoschema'" \
+#         | mysql | sed 's/\(GRANT .*\)/\1;/;s/^\(Grants for .*\)/## \1 ##/;/##/{x;p;x;}'\
+#         > $BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql
 
-        if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
-            send_alert "The task to export the MySQL users and their grants has been failed"
-            ERROR_TASK="1"
-        fi
+#         if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
+#             send_alert "The task to export the MySQL users and their grants has been failed"
+#             ERROR_TASK="1"
+#         fi
 
-    elif [ "$MYSQL_VERSION" == "5.7" ]; then
-        # Export users
-        mysql -B -N -e "SELECT DISTINCT CONCAT('SHOW CREATE USER \'', user, '\'@\'', host, '\';') AS query FROM mysql.user WHERE user != 'debian-sys-maint' AND user != 'root' AND user != 'phpmyadmin' AND user != 'mysql.sys' AND user != 'mysql.session' AND user != 'mysql.infoschema'" \
-        | mysql | sed 's/\(CREATE .*\)/\1;/;s/^\(CREATE USER for .*\)/## \1 ##/;/##/{x;p;x;}' \
-        > $BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql
+#     elif [ "$MYSQL_VERSION" == "5.7" ]; then
+#         # Export users
+#         mysql -B -N -e "SELECT DISTINCT CONCAT('SHOW CREATE USER \'', user, '\'@\'', host, '\';') AS query FROM mysql.user WHERE user != 'debian-sys-maint' AND user != 'root' AND user != 'phpmyadmin' AND user != 'mysql.sys' AND user != 'mysql.session' AND user != 'mysql.infoschema'" \
+#         | mysql | sed 's/\(CREATE .*\)/\1;/;s/^\(CREATE USER for .*\)/## \1 ##/;/##/{x;p;x;}' \
+#         > $BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql
 
-        if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
-            send_alert "The task to export the MySQL users has been failed"
-            ERROR_TASK="1"
-        fi
+#         if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
+#             send_alert "The task to export the MySQL users has been failed"
+#             ERROR_TASK="1"
+#         fi
 
-        # Export users's grants
-        mysql -B -N -e "SELECT DISTINCT CONCAT('SHOW GRANTS FOR \'', user, '\'@\'', host, '\';') AS query FROM mysql.user WHERE user != 'debian-sys-maint' AND user != 'root' AND user != 'phpmyadmin' AND user != 'mysql.sys' AND user != 'mysql.session' AND user != 'mysql.infoschema'" \
-        | mysql | sed 's/\(GRANT .*\)/\1;/;s/^\(Grants for .*\)/## \1 ##/;/##/{x;p;x;}' \
-        >> $BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql
+#         # Export users's grants
+#         mysql -B -N -e "SELECT DISTINCT CONCAT('SHOW GRANTS FOR \'', user, '\'@\'', host, '\';') AS query FROM mysql.user WHERE user != 'debian-sys-maint' AND user != 'root' AND user != 'phpmyadmin' AND user != 'mysql.sys' AND user != 'mysql.session' AND user != 'mysql.infoschema'" \
+#         | mysql | sed 's/\(GRANT .*\)/\1;/;s/^\(Grants for .*\)/## \1 ##/;/##/{x;p;x;}' \
+#         >> $BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql
 
-        if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
-            send_alert "The task to export the MySQL users grants has been failed"
-            ERROR_TASK="1"
-        fi
+#         if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
+#             send_alert "The task to export the MySQL users grants has been failed"
+#             ERROR_TASK="1"
+#         fi
 
-    elif [ "$MYSQL_VERSION" == "8.0" ]; then
-        # Export user table form mysql DB
-        mysqldump mysql user > $BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql
+#     elif [ "$MYSQL_VERSION" == "8.0" ]; then
+#         # Export user table form mysql DB
+#         mysqldump mysql user > $BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql
 
-        if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
-            send_alert "The task to export the MySQL user table has been failed"
-            ERROR_TASK="1"
-        fi
-    fi
+#         if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
+#             send_alert "The task to export the MySQL user table has been failed"
+#             ERROR_TASK="1"
+#         fi
+#     fi
 
-    # Put the exported file in an S3 compatible bucket
-    if [ "$STORS3" == "YES" ] && [ "$ERROR_TASK" == "0" ]; then
-        if [ "$S3TOOL" == "s3cmd" ]; then
-            s3cmd put "$BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql" s3://$S3BUCKET/users-grants/
+#     # Put the exported file in an S3 compatible bucket
+#     if [ "$STORS3" == "YES" ] && [ "$ERROR_TASK" == "0" ]; then
+#         if [ "$S3TOOL" == "s3cmd" ]; then
+#             s3cmd put "$BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql" s3://$S3BUCKET/users-grants/
 
-            if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
-                send_alert "The copy of MySQL users grants to S3 compatible bucket has been failed"
-            fi
-        fi
+#             if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
+#                 send_alert "The copy of MySQL users grants to S3 compatible bucket has been failed"
+#             fi
+#         fi
         
-        if [ "$S3TOOL" == "aws-cli" ] && [ "$ERROR_TASK" == "0" ]; then
-            aws s3 cp "$BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql" s3://$S3BUCKET/users-grants/
+#         if [ "$S3TOOL" == "aws-cli" ] && [ "$ERROR_TASK" == "0" ]; then
+#             aws s3 cp "$BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql" s3://$S3BUCKET/users-grants/
 
-            if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
-                send_alert "The copy of MySQL users grants to S3 compatible bucket has been failed"
-            fi
-        fi
+#             if [ "$?" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
+#                 send_alert "The copy of MySQL users grants to S3 compatible bucket has been failed"
+#             fi
+#         fi
         
-        if [ "$REMOVEBKP" == "YES" ] && [ "$ERROR_TASK" == "0" ]; then
-            rm -f "$BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql"
-        fi
-    fi
-}
+#         if [ "$REMOVEBKP" == "YES" ] && [ "$ERROR_TASK" == "0" ]; then
+#             rm -f "$BASEBKPDIR/users-grants/users-$(date +%y-%m-%d).sql"
+#         fi
+#     fi
+# }
 
 # Send alert to PagerDuty if any backup tasks fails
 send_alert() {
@@ -321,10 +322,10 @@ parse_opts $@
 # Check script requirements
 check_requirements
 
-# Backup all users and their grants in a .sql file
-if [ $BKPUSERGRANTS == "YES" ]; then
-    backup_users_grants
-fi
+# # Backup all users and their grants in a .sql file
+# if [ $BKPUSERGRANTS == "YES" ]; then
+#     backup_users_grants
+# fi
 
 # Get all databases name
 DBS=`mysql --host="$DB_HOST" --user="$DB_MASTER_USERNAME" --password="${6}" -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
