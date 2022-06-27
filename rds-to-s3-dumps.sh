@@ -319,7 +319,7 @@ if [ $BKPUSERGRANTS == "YES" ]; then
 fi
 
 # Get all databases name
-DBS=`mysql -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
+DBS=`mysql --host="$DB_HOST" --user="$DB_MASTER_USERNAME" -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
 
 if [ ! -z "$DBS" ]; then
     # Dump each gotten database
