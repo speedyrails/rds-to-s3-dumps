@@ -151,6 +151,9 @@ REMOVEBKP="YES"
 # Enable PagerDuty notifications if the backup tasks fails: YES/NO
 ENABLE_PG_NOTIFICATIONS="NO"
 
+# Database host
+DB_HOST="${6}"
+
 # PagerDuty parameters
 PG_CREATE_EVENT_URL="https://events.pagerduty.com/generic/2010-04-15/create_event.json"
 PG_SERVICE_KEY_FOR_CRITICAL="54fd2e2537864f07b701ee509f4f9e83"
@@ -337,6 +340,7 @@ if [ ! -z "$DBS" ]; then
             --quick \
             --set-charset \
             --user=$DB_MASTER_USERNAME \
+            --host=$DB_HOST
             "$DB" | gzip >"$BASEBKPDIR/$DB/$(date +%y-%m-%d).sql.gz" 
 
         if [ "${PIPESTATUS[0]}" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
