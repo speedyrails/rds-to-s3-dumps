@@ -138,7 +138,7 @@ BKPUSERGRANTS="NO"
 STORS3="YES"
 
 # S3 tool to upload the backups: s3cmd/aws-cli
-S3TOOL="s3cmd"
+S3TOOL="aws-cli"
 
 # S3 compatible bucket name/prefix
 # e.g: my-bucket
