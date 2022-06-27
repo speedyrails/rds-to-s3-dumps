@@ -128,7 +128,7 @@ BASEBKPDIR="/backups/mysql"
 REMOVEOLDBKPFROM="+5"
 
 # Databases to exclude in the dump
-DBSTOEXCLUDE="mysql|information_schema|performance_schema|sys"
+DBSTOEXCLUDE="mysql|information_schema|performance_schema|sys|innodb|tmp"
 
 # Backup users and their grants: YES/NO
 # This task will create a file in the '$BASEBKPDIR/users-grants/' directory
@@ -153,6 +153,15 @@ ENABLE_PG_NOTIFICATIONS="NO"
 
 # Database host
 DB_HOST=$(aws rds describe-db-instances --db-instance-identifier "restored-${RDS_INSTANCE}" | jq --raw-output '.DBInstances[].Endpoint.Address')
+
+echo "Building .my.cnf file"
+touch .my.cnf
+chmod 600 .my.cnf
+echo "[client]" >> .my.cnf
+echo password="${6}" >> .my.cnf
+echo host="$DB_HOST" >> .my.cnf
+echo user="$DB_MASTER_USERNAME" >> .my.cnf
+cat .my.cnf
 
 # PagerDuty parameters
 PG_CREATE_EVENT_URL="https://events.pagerduty.com/generic/2010-04-15/create_event.json"
@@ -319,7 +328,7 @@ if [ $BKPUSERGRANTS == "YES" ]; then
 fi
 
 # Get all databases name
-DBS=`mysql --host="$DB_HOST" --user="$DB_MASTER_USERNAME" -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
+DBS=`mysql --host="$DB_HOST" --user="$DB_MASTER_USERNAME" --password="${6}" -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
 
 if [ ! -z "$DBS" ]; then
     # Dump each gotten database
@@ -340,7 +349,8 @@ if [ ! -z "$DBS" ]; then
             --quick \
             --set-charset \
             --user=$DB_MASTER_USERNAME \
-            --host=$DB_HOST
+            --host=$DB_HOST \
+            --password=${6} \
             "$DB" | gzip >"$BASEBKPDIR/$DB/$(date +%y-%m-%d).sql.gz" 
 
         if [ "${PIPESTATUS[0]}" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
@@ -375,5 +385,20 @@ fi
 
 # Remove old backup files
 find "$BASEBKPDIR" -type f -mtime $REMOVEOLDBKPFROM -print0 | xargs -r0 rm -f
+
+echo "DB dumps sent to S3"
+
+echo "Starting deletion of RDS instance: restored-${RDS_INSTANCE}"
+
+aws rds delete-db-instance --db-instance-identifier "restored-${RDS_INSTANCE}" --skip-final-snapshot || exit 1
+
+DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier "restored-${RDS_INSTANCE}" | jq --raw-output '.DBInstances[].DBInstanceStatus')
+while [[ "${DB_STATUS}" == "deleting"  ]]; do
+  echo "Restored DB Status: ${DB_STATUS}. Waiting for db deletion..."
+  sleep 10
+  DB_STATUS=$(aws rds describe-db-instances --db-instance-identifier "restored-${RDS_INSTANCE}" | jq --raw-output '.DBInstances[].DBInstanceStatus')
+done
+
+echo "Restored RDS instance deleted"
 
 exit 0
