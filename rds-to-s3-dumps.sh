@@ -128,7 +128,7 @@ BASEBKPDIR="/backups/mysql"
 REMOVEOLDBKPFROM="+5"
 
 # Databases to exclude in the dump
-DBSTOEXCLUDE="mysql|information_schema|performance_schema|sys"
+DBSTOEXCLUDE="mysql|information_schema|performance_schema|sys|innodb|tmp"
 
 # Backup users and their grants: YES/NO
 # This task will create a file in the '$BASEBKPDIR/users-grants/' directory
