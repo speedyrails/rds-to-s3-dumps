@@ -49,7 +49,7 @@ RDS_INSTANCE="${2}"
 
 
 # ### Start restore action
-# RDS_INSTANCE_DETAILS=$(aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE}")
+RDS_INSTANCE_DETAILS=$(aws rds describe-db-instances --db-instance-identifier "${RDS_INSTANCE}")
 # DB_INSTANCE_CLASS=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].DBInstanceClass')
 # DB_AVAILABILITY_ZONE=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].AvailabilityZone')
 # DB_SUBNET_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].DBSubnetGroup.DBSubnetGroupName')
