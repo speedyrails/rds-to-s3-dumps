@@ -327,7 +327,7 @@ if [ $BKPUSERGRANTS == "YES" ]; then
 fi
 
 # Get all databases name
-DBS=`mysql --host="$DB_HOST" --user="$DB_MASTER_USERNAME" -p -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
+DBS=`mysql --host="$DB_HOST" --user="$DB_MASTER_USERNAME" --password="${6}" -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
 
 if [ ! -z "$DBS" ]; then
     # Dump each gotten database
@@ -349,6 +349,7 @@ if [ ! -z "$DBS" ]; then
             --set-charset \
             --user=$DB_MASTER_USERNAME \
             --host=$DB_HOST \
+            --password=${6} \
             "$DB" | gzip >"$BASEBKPDIR/$DB/$(date +%y-%m-%d).sql.gz" 
 
         if [ "${PIPESTATUS[0]}" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
