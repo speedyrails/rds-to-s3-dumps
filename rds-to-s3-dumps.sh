@@ -152,7 +152,7 @@ REMOVEBKP="YES"
 ENABLE_PG_NOTIFICATIONS="NO"
 
 # Database host
-DB_HOST="${6}"
+DB_HOST=$(aws rds describe-db-instances --db-instance-identifier "restored-${RDS_INSTANCE}" | jq --raw-output '.DBInstances[].Endpoint.Address')
 
 # PagerDuty parameters
 PG_CREATE_EVENT_URL="https://events.pagerduty.com/generic/2010-04-15/create_event.json"
