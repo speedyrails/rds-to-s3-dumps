@@ -55,7 +55,7 @@ RDS_INSTANCE="${2}"
 # DB_SUBNET_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].DBSubnetGroup.DBSubnetGroupName')
 # DB_VPC_SECURITY_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].VpcSecurityGroups[].VpcSecurityGroupId')
 # DB_PARAMETER_GROUP=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].DBParameterGroups[].DBParameterGroupName')
-# DB_MASTER_USERNAME=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].MasterUsername')
+DB_MASTER_USERNAME=$(echo "$RDS_INSTANCE_DETAILS" | jq --raw-output '.DBInstances[].MasterUsername')
 
 # if [[ "$RESTORE_TO_LATEST" == "true" ]]; then
 #   echo "Using latest restorable time to restore database"
@@ -153,6 +153,14 @@ ENABLE_PG_NOTIFICATIONS="NO"
 
 # Database host
 DB_HOST=$(aws rds describe-db-instances --db-instance-identifier "restored-${RDS_INSTANCE}" | jq --raw-output '.DBInstances[].Endpoint.Address')
+
+echo "Building .my.cnf file"
+touch .my.cnf
+chmod 600 .my.cnf
+echo "[client]" >> .my.cnf
+echo password="${7}" >> .my.cnf
+echo host="$DB_HOST" >> .my.cnf
+echo user="$DB_MASTER_USERNAME" >> .my.cnf
 
 # PagerDuty parameters
 PG_CREATE_EVENT_URL="https://events.pagerduty.com/generic/2010-04-15/create_event.json"
@@ -319,7 +327,7 @@ if [ $BKPUSERGRANTS == "YES" ]; then
 fi
 
 # Get all databases name
-DBS=`mysql --host="$DB_HOST" --user="$DB_MASTER_USERNAME" -p -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
+DBS=`mysql -e "show databases;" | egrep -v "Database|$DBSTOEXCLUDE"`
 
 if [ ! -z "$DBS" ]; then
     # Dump each gotten database
@@ -340,7 +348,6 @@ if [ ! -z "$DBS" ]; then
             --quick \
             --set-charset \
             --user=$DB_MASTER_USERNAME \
-            --host=$DB_HOST
             "$DB" | gzip >"$BASEBKPDIR/$DB/$(date +%y-%m-%d).sql.gz" 
 
         if [ "${PIPESTATUS[0]}" != "0" ] && [ "$ENABLE_PG_NOTIFICATIONS" == "YES" ]; then
