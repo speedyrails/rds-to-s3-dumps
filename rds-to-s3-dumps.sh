@@ -158,7 +158,7 @@ echo "Building .my.cnf file"
 touch .my.cnf
 chmod 600 .my.cnf
 echo "[client]" >> .my.cnf
-echo password="${7}" >> .my.cnf
+echo password="${6}" >> .my.cnf
 echo host="$DB_HOST" >> .my.cnf
 echo user="$DB_MASTER_USERNAME" >> .my.cnf
 
