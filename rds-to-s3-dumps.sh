@@ -341,6 +341,7 @@ if [ ! -z "$DBS" ]; then
 
         # Dump MySQL databases
         mysqldump \
+            --column-statistics=0 \
             --add-drop-table \
             --add-locks \
             --create-options \
