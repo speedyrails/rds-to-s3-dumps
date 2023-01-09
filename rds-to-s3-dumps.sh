@@ -340,8 +340,9 @@ if [ ! -z "$DBS" ]; then
         fi
 
         # Dump MySQL databases
-        mysqldump \
+        mysqlpump \
             --column-statistics=0 \
+            --set-gtid-purged=OFF \
             --add-drop-table \
             --add-locks \
             --create-options \
