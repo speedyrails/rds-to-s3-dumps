@@ -343,12 +343,6 @@ if [ ! -z "$DBS" ]; then
         mysqlpump \
             --column-statistics=0 \
             --set-gtid-purged=OFF \
-            --add-drop-table \
-            --add-locks \
-            --disable-keys \
-            --extended-insert \
-            --quick \
-            --set-charset \
             --user=$DB_MASTER_USERNAME \
             --host=$DB_HOST \
             --password=${6} \
