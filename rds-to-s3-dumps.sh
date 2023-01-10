@@ -345,7 +345,6 @@ if [ ! -z "$DBS" ]; then
             --set-gtid-purged=OFF \
             --add-drop-table \
             --add-locks \
-            --create-options \
             --disable-keys \
             --extended-insert \
             --quick \
